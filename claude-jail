@@ -1,0 +1,51 @@
+#!/usr/bin/env fish
+
+# Get the directory where this script is located
+set SCRIPT_DIR (dirname (realpath (status --current-filename)))
+
+# Get the current working directory (where the script is called from)
+set MOUNT_DIR (pwd)
+
+# Create the Docker volume if it doesn't exist
+if not docker volume inspect claude-jail-home >/dev/null 2>&1
+    echo "Creating claude-jail-home volume..."
+    docker volume create claude-jail-home
+    
+    # Ask if user wants to sync their home directory
+    echo "Would you like to sync your home directory to the container? (y/n)"
+    read -n 1 sync_home
+    if test "$sync_home" = "y"
+        echo "Syncing home directory to volume (this may take a while)..."
+        docker run --rm -v $HOME:/source:ro -v claude-jail-home:/target alpine sh -c "cp -a /source/. /target/"
+    end
+end
+
+# Create a temporary docker-compose override file
+set TEMP_COMPOSE (mktemp -t claude-jail-compose.XXXXXX.yml)
+
+# Write the override configuration
+echo "version: '3.8'
+services:
+  claude:
+    build:
+      context: $SCRIPT_DIR
+      dockerfile: Dockerfile
+    image: claude-jail:latest
+    volumes:
+      - $MOUNT_DIR:/workspace:rw
+      - claude-jail-home:/home/node:rw
+    working_dir: /workspace
+    stdin_open: true
+    tty: true
+    environment:
+      - ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY
+    command: claude $argv
+volumes:
+  claude-jail-home:
+    external: true" > $TEMP_COMPOSE
+
+# Run docker-compose
+docker-compose -f $SCRIPT_DIR/docker-compose.yml -f $TEMP_COMPOSE run --rm claude
+
+# Clean up
+rm -f $TEMP_COMPOSE

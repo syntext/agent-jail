@@ -1,0 +1,13 @@
+version: '3.8'
+services:
+  devcontainer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: crm-server-${BRANCH:-main}
+    volumes:
+      - ../.:/workspace:rw
+      - ~/.claude:/home/node/.claude:rw
+      - ~/.claude:/home/node/.claude:rw
+      - ~/.claude.json:/home/node/.claude.json:rw
+    command: sleep infinity
