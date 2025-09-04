@@ -73,6 +73,14 @@ CLIs are installed globally in the image:
 - Remove the persistent home volume: `docker volume rm agent-jail-home`
 - Remove the built image: `docker rmi agent-jail`
 
+**Full Clean Slate**
+
+- Reset everything (volume + image), then rebuild on next run:
+  - `docker volume rm agent-jail-home && docker rmi agent-jail`
+- Optional: also clear build cache and dangling resources:
+  - `docker builder prune -f && docker image prune -f && docker container prune -f && docker network prune -f`
+- After this, run `./agent-jail --shell` (or a provider flag) to rebuild fresh.
+
 **Troubleshooting**
 
 - Provider command not found:
