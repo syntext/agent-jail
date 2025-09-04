@@ -1,5 +1,11 @@
 # Agent Jail
 
+**Who Is This For**
+
+I created this project for my personal use. Feel free to use it as a reference, but be sure to fork it and adjust it to suit your needs.
+
+**Agent Jail**
+
 - **Purpose:** Containerized sandbox that launches an AI coding agent inside a locked-down, reproducible environment mapped to your current project directory.
 - **Command:** `./agent-jail`
 - **Providers:** `codex` (default), `claude`, `coder` (Just Every Code fork)
@@ -22,6 +28,10 @@
 
 - Make the launcher executable: `chmod +x ./agent-jail`
 - Optional: add an alias on your PATH for convenience.
+
+**Update**
+
+- Rebuild the docker image: `docker build --no-cache -t agent-jail .`
 
 **Quick Start**
 
@@ -80,6 +90,25 @@ CLIs are installed globally in the image:
 - Optional: also clear build cache and dangling resources:
   - `docker builder prune -f && docker image prune -f && docker container prune -f && docker network prune -f`
 - After this, run `./agent-jail --shell` (or a provider flag) to rebuild fresh.
+
+**Logs and Diagnostics**
+
+- Docker daemon (dind) logs inside the jail:
+  - View: `less /var/log/dockerd.log`
+  - Tail: `tail -f /var/log/dockerd.log`
+  - Since: `awk 'BEGIN{print strftime("%Y-%m-%d %H:%M:%S",systime()-600)}' | xargs -I{} rg -n "" /var/log/dockerd.log` (last 10 minutes)
+  - Change path: set `DOCKERD_LOG=/custom/path.log` in the container env.
+
+- Logs of containers started via dind (from inside the jail):
+  - List: `docker ps -a`
+  - Logs: `docker logs <container>` or `docker logs -f <container>`
+
+- Host view of the jail container logs (separate terminal):
+  - Find it: `docker ps -a` (look for the temporary `agent` container from `agent-jail`)
+  - Logs: `docker logs -f <container_id>`
+
+- Save provider CLI output (inside the jail):
+  - Example: `codex --help 2>&1 | tee -a /workspace/agent-jail.log`
 
 **Troubleshooting**
 
