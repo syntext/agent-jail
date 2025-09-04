@@ -6,6 +6,15 @@ set SCRIPT_DIR (dirname (realpath (status --current-filename)))
 # Get the current working directory (where the script is called from)
 set MOUNT_DIR (pwd)
 
+# Check if --shell argument is provided
+set USE_SHELL false
+for arg in $argv
+    if test "$arg" = "--shell"
+        set USE_SHELL true
+        break
+    end
+end
+
 # Create the Docker volume if it doesn't exist
 if not docker volume inspect claude-jail-home >/dev/null 2>&1
     echo "Creating claude-jail-home volume..."
@@ -24,25 +33,34 @@ end
 set TEMP_COMPOSE (mktemp -t claude-jail-compose.XXXXXX.yml)
 
 # Write the override configuration
-echo "version: '3.8'
-services:
+echo "services:
   claude:
     build:
       context: $SCRIPT_DIR
       dockerfile: Dockerfile
-    image: claude-jail:latest
+    image: claude-jail
     volumes:
       - $MOUNT_DIR:/workspace:rw
       - claude-jail-home:/home/node:rw
+      - /Users/roan/.codex:/home/.codex:rw
     working_dir: /workspace
     stdin_open: true
     tty: true
+    privileged: true
     environment:
-      - ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY
-    command: claude $argv
-volumes:
+      - ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY" > $TEMP_COMPOSE
+
+# Add the appropriate command based on whether --shell is specified
+if test "$USE_SHELL" = "true"
+    echo "    command: /bin/bash" >> $TEMP_COMPOSE
+else
+    echo "    command: codex $argv" >> $TEMP_COMPOSE
+end
+
+echo "volumes:
   claude-jail-home:
-    external: true" > $TEMP_COMPOSE
+    external: true" >> $TEMP_COMPOSE
+
 
 # Run docker-compose
 docker-compose -f $SCRIPT_DIR/docker-compose.yml -f $TEMP_COMPOSE run --rm claude
