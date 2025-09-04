@@ -31,7 +31,7 @@ if test (count $argv) -eq 0 -o "$argv[1]" = "-h" -o "$argv[1]" = "--help"
     echo "Defaults:"
     echo "  Provider: codex"
     echo "  Mount: current dir -> /workspace"
-    echo "  Persisted: docker volume 'agent-jail-home' as /home/node"
+    echo "  Persisted: docker volume 'agent-jail-home' as /home/jail"
     echo
     echo "Examples:"
     echo "  agent-jail --shell"
@@ -67,14 +67,6 @@ end
 if not docker volume inspect agent-jail-home >/dev/null 2>&1
     echo "Creating agent-jail-home volume..."
     docker volume create agent-jail-home
-    
-    # Ask if user wants to sync their home directory
-    echo "Would you like to sync your home directory to the container? (y/n)"
-    read -n 1 sync_home
-    if test "$sync_home" = "y"
-        echo "Syncing home directory to volume (this may take a while)..."
-        docker run --rm -v $HOME:/source:ro -v agent-jail-home:/target alpine sh -c "cp -a /source/. /target/"
-    end
 end
 
 # Create a temporary docker-compose override file
@@ -92,9 +84,9 @@ echo "services:
     image: agent-jail
     volumes:
       - $MOUNT_DIR:/workspace:rw
-      - agent-jail-home:/home/node:rw
-      - $HOME/.codex:/home/node/.codex:rw
-      - $HOME/.claude:/home/node/.claude:rw
+      - agent-jail-home:/home/jail:rw
+      - $HOME/.codex:/home/jail/.codex:rw
+      - $HOME/.claude:/home/jail/.claude:rw
     working_dir: /workspace
     stdin_open: true
     tty: true
