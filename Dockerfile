@@ -1,4 +1,4 @@
-FROM node:24-bookworm
+FROM node:24-trixie
 ARG TZ
 ENV TZ="$TZ"
 # Install basic development tools and iptables/ipset
@@ -65,8 +65,9 @@ ENV PATH=$PATH:/usr/local/share/npm-global/bin
 ENV SHELL=/bin/bash
 ENV TERM=xterm-256color
 # Install SDKMAN and Java 21 Temurin
-#RUN curl -s "https://get.sdkman.io" | bash && \
-#  bash -c "source $HOME/.sdkman/bin/sdkman-init.sh && sdk install java 21.0.5-tem && sdk default java 21.0.5-tem"
+RUN curl -s "https://get.sdkman.io" | bash && \
+  bash -c "source $HOME/.sdkman/bin/sdkman-init.sh && sdk install java 21.0.5-tem && sdk default java 21.0.5-tem"
+RUN echo "source \$HOME/.sdkman/bin/sdkman-init.sh" >> $HOME/.bashrc && . $HOME/.bashrc
 # Add SDKMAN and Java to PATH
 ENV SDKMAN_DIR=/home/node/.sdkman
 ENV PATH=$SDKMAN_DIR/candidates/java/current/bin:$PATH

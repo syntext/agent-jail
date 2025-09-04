@@ -53,11 +53,11 @@ for arg in $argv
     if test "$arg" = "--shell"
         set USE_SHELL true
     else if test "$arg" = "--codex"
-        set PROVIDER codex
+        set PROVIDER "codex --sandbox danger-full-access"
     else if test "$arg" = "--claude"
-        set PROVIDER claude
+        set PROVIDER "claude --dangerously-skip-permissions"
     else if test "$arg" = "--just-every"
-        set PROVIDER coder
+        set PROVIDER "coder --sandbox danger-full-access"
     else
         set CMD_ARGS $CMD_ARGS $arg
     end
@@ -85,7 +85,7 @@ echo "services:
     volumes:
       - $MOUNT_DIR:/workspace:rw
       - $HOME/.codex:/home/node/.codex:rw
-      - $HOME/.claude:/home/node/.claude:rw
+      #- $HOME/.claude:/home/node/.claude:rw
       - agent-jail-home:/home/node:rw
     working_dir: /workspace
     stdin_open: true
