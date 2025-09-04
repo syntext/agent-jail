@@ -6,64 +6,77 @@ set SCRIPT_DIR (dirname (realpath (status --current-filename)))
 # Get the current working directory (where the script is called from)
 set MOUNT_DIR (pwd)
 
-# Check if --shell argument is provided
+# Parse arguments
 set USE_SHELL false
+set PROVIDER codex
+set CMD_ARGS
 for arg in $argv
     if test "$arg" = "--shell"
         set USE_SHELL true
-        break
+    else if test "$arg" = "--codex"
+        set PROVIDER codex
+    else if test "$arg" = "--claude"
+        set PROVIDER claude
+    else if test "$arg" = "--justcode"
+        set PROVIDER coder
+    else
+        set CMD_ARGS $CMD_ARGS $arg
     end
 end
 
 # Create the Docker volume if it doesn't exist
-if not docker volume inspect claude-jail-home >/dev/null 2>&1
-    echo "Creating claude-jail-home volume..."
-    docker volume create claude-jail-home
+if not docker volume inspect agent-jail-home >/dev/null 2>&1
+    echo "Creating agent-jail-home volume..."
+    docker volume create agent-jail-home
     
     # Ask if user wants to sync their home directory
     echo "Would you like to sync your home directory to the container? (y/n)"
     read -n 1 sync_home
     if test "$sync_home" = "y"
         echo "Syncing home directory to volume (this may take a while)..."
-        docker run --rm -v $HOME:/source:ro -v claude-jail-home:/target alpine sh -c "cp -a /source/. /target/"
+        docker run --rm -v $HOME:/source:ro -v agent-jail-home:/target alpine sh -c "cp -a /source/. /target/"
     end
 end
 
 # Create a temporary docker-compose override file
-set TEMP_COMPOSE (mktemp -t claude-jail-compose.XXXXXX.yml)
+set TEMP_COMPOSE (mktemp -t agent-jail-compose.XXXXXX.yml)
+
+# Build command string
+set ARG_STR (string join ' ' $CMD_ARGS)
 
 # Write the override configuration
 echo "services:
-  claude:
+  agent:
     build:
       context: $SCRIPT_DIR
       dockerfile: Dockerfile
-    image: claude-jail
+    image: agent-jail
     volumes:
       - $MOUNT_DIR:/workspace:rw
-      - claude-jail-home:/home/node:rw
-      - /Users/roan/.codex:/home/.codex:rw
+      - agent-jail-home:/home/node:rw
+      - $HOME/.codex:/home/node/.codex:rw
     working_dir: /workspace
     stdin_open: true
     tty: true
     privileged: true
     environment:
-      - ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY" > $TEMP_COMPOSE
+      - ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY
+      - OPENAI_API_KEY=$OPENAI_API_KEY" > $TEMP_COMPOSE
 
-# Add the appropriate command based on whether --shell is specified
+# Add the appropriate command based on flags
 if test "$USE_SHELL" = "true"
     echo "    command: /bin/bash" >> $TEMP_COMPOSE
 else
-    echo "    command: codex $argv" >> $TEMP_COMPOSE
+    echo "    command: $PROVIDER $ARG_STR" >> $TEMP_COMPOSE
 end
 
 echo "volumes:
-  claude-jail-home:
+  agent-jail-home:
     external: true" >> $TEMP_COMPOSE
 
 
 # Run docker-compose
-docker-compose -f $SCRIPT_DIR/docker-compose.yml -f $TEMP_COMPOSE run --rm claude
+docker-compose -f $SCRIPT_DIR/docker-compose.yml -f $TEMP_COMPOSE run --rm agent
 
 # Clean up
 rm -f $TEMP_COMPOSE
