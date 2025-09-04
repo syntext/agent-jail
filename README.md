@@ -49,12 +49,12 @@ CLIs are installed globally in the image:
 
 - Builds an ephemeral docker-compose override and runs service `agent`.
 - Mounts your current directory to `/workspace` (read-write).
-- Creates/persists a Docker volume `agent-jail-home` for `/home/node`.
+- Creates/persists a Docker volume `agent-jail-home` for `/home/jail`.
 - Optionally offers to sync your host `$HOME` into `agent-jail-home` the first time (one-time copy).
 - Passes through environment variables:
   - `OPENAI_API_KEY`
   - `ANTHROPIC_API_KEY`
-- Mounts your host `$HOME/.codex` into `/home/node/.codex` for Codex CLI config (optional; safe if absent).
+- Mounts your host `$HOME/.codex` into `/home/jail/.codex` for Codex CLI config (optional; safe if absent).
 
 **Examples**
 
@@ -90,5 +90,4 @@ CLIs are installed globally in the image:
 - `agent-jail`: fish launcher script (entrypoint)
 - `Dockerfile`: image with provider CLIs and dev tooling
 - `docker-compose.yml`: base compose (devcontainer service); launcher adds an override for `agent`
-
 

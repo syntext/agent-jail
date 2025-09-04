@@ -84,9 +84,9 @@ echo "services:
     image: agent-jail
     volumes:
       - $MOUNT_DIR:/workspace:rw
-      - agent-jail-home:/home/jail:rw
       - $HOME/.codex:/home/jail/.codex:rw
       - $HOME/.claude:/home/jail/.claude:rw
+      - agent-jail-home:/home/jail:rw
     working_dir: /workspace
     stdin_open: true
     tty: true
@@ -108,7 +108,7 @@ echo "volumes:
 
 
 # Run docker-compose
-docker-compose -f $SCRIPT_DIR/docker-compose.yml -f $TEMP_COMPOSE run --rm agent
+docker-compose -f $TEMP_COMPOSE run --rm agent
 
 # Clean up
 rm -f $TEMP_COMPOSE

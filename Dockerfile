@@ -32,10 +32,11 @@ RUN apt update && apt install -y less \
 
 RUN locale-gen en_US.UTF-8
 
-# Ensure default node user has access to /usr/local/share
-RUN mkdir -p /usr/local/share/npm-global && \
-  chown -R node:node /usr/local/share
-ARG USERNAME=node
+# Create non-root user 'jail' and ensure access to shared dirs
+RUN useradd -m -s /bin/bash jail && \
+  mkdir -p /usr/local/share/npm-global && \
+  chown -R jail:jail /usr/local/share
+ARG USERNAME=jail
 # Persist bash history.
 RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhistory/.bash_history" \
   && mkdir /commandhistory \
@@ -44,20 +45,20 @@ RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhisto
 # Set `DEVCONTAINER` environment variable to help with orientation
 ENV DEVCONTAINER=true
 # Create workspace and config directories and set permissions
-RUN mkdir -p /workspace /home/node/.claude && \
-  chown -R node:node /workspace /home/node/.claude
+RUN mkdir -p /workspace /home/jail/.claude && \
+  chown -R jail:jail /workspace /home/jail/.claude
 WORKDIR /workspace
 RUN ARCH=$(dpkg --print-architecture) && \
   wget "https://github.com/dandavison/delta/releases/download/0.18.2/git-delta_0.18.2_${ARCH}.deb" && \
   sudo dpkg -i "git-delta_0.18.2_${ARCH}.deb" && \
   rm "git-delta_0.18.2_${ARCH}.deb"
-# Set empty password for node user
-RUN passwd -d node
-# Add node user to sudoers with NOPASSWD
-RUN echo "node ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/node-sudo && \
-  chmod 0440 /etc/sudoers.d/node-sudo
+# Set empty password for jail user
+RUN passwd -d jail
+# Add jail user to sudoers with NOPASSWD
+RUN echo "jail ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/jail-sudo && \
+  chmod 0440 /etc/sudoers.d/jail-sudo
 # Set up non-root user
-USER node
+USER jail
 # Install global packages
 ENV NPM_CONFIG_PREFIX=/usr/local/share/npm-global
 ENV PATH=$PATH:/usr/local/share/npm-global/bin
@@ -68,7 +69,7 @@ ENV TERM=xterm-256color
 #RUN curl -s "https://get.sdkman.io" | bash && \
 #  bash -c "source $HOME/.sdkman/bin/sdkman-init.sh && sdk install java 21.0.5-tem && sdk default java 21.0.5-tem"
 # Add SDKMAN and Java to PATH
-ENV SDKMAN_DIR=/home/node/.sdkman
+ENV SDKMAN_DIR=/home/jail/.sdkman
 ENV PATH=$SDKMAN_DIR/candidates/java/current/bin:$PATH
 ENV JAVA_HOME=$SDKMAN_DIR/candidates/java/current
 # Install UV for certain MCP's
@@ -94,6 +95,6 @@ COPY init-firewall.sh /usr/local/bin/
 USER root
 # Lockdown mode
 #RUN chmod +x /usr/local/bin/init-firewall.sh && \
-#  echo "node ALL=(root) NOPASSWD: /usr/local/bin/init-firewall.sh" > /etc/sudoers.d/node-firewall && \
-#  chmod 0440 /etc/sudoers.d/node-firewall
-USER node
+#  echo "jail ALL=(root) NOPASSWD: /usr/local/bin/init-firewall.sh" > /etc/sudoers.d/jail-firewall && \
+#  chmod 0440 /etc/sudoers.d/jail-firewall
+USER jail
