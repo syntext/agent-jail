@@ -31,7 +31,7 @@ if test (count $argv) -eq 0 -o "$argv[1]" = "-h" -o "$argv[1]" = "--help"
     echo "Defaults:"
     echo "  Provider: codex"
     echo "  Mount: current dir -> /workspace"
-    echo "  Persisted: docker volume 'agent-jail-home' as /home/jail"
+    echo "  Persisted: docker volume 'agent-jail-home' as /home/node"
     echo
     echo "Examples:"
     echo "  agent-jail --shell"
@@ -84,9 +84,9 @@ echo "services:
     image: agent-jail
     volumes:
       - $MOUNT_DIR:/workspace:rw
-      - $HOME/.codex:/home/jail/.codex:rw
-      - $HOME/.claude:/home/jail/.claude:rw
-      - agent-jail-home:/home/jail:rw
+      - $HOME/.codex:/home/node/.codex:rw
+      - $HOME/.claude:/home/node/.claude:rw
+      - agent-jail-home:/home/node:rw
     working_dir: /workspace
     stdin_open: true
     tty: true

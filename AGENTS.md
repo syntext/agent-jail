@@ -34,5 +34,5 @@
 
 ## Security & Configuration Tips
 - Secrets: export `OPENAI_API_KEY` and/or `ANTHROPIC_API_KEY` in your host shell; never commit credentials.
-- Volumes: `agent-jail-home` persists `/home/jail`; remove it if you need a clean state.
+- Volumes: `agent-jail-home` persists `/home/node`; remove it if you need a clean state.
 - Network lockdown: use `init-firewall.sh` only when required; validate access to allowed endpoints after changes.
