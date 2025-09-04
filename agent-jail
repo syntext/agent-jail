@@ -1,14 +1,53 @@
 #!/usr/bin/env fish
 
-# Get the directory where this script is located
 set SCRIPT_DIR (dirname (realpath (status --current-filename)))
 
 # Get the current working directory (where the script is called from)
 set MOUNT_DIR (pwd)
 
+# Show usage when no arguments are provided or when help is requested
+if test (count $argv) -eq 0 -o "$argv[1]" = "-h" -o "$argv[1]" = "--help"
+    echo "Agent Jail"
+    echo "Run Codex/Claude agents inside a jailed Docker environment."
+    echo
+    echo "Usage: agent-jail [options] [--] [agent-args...]"
+    echo
+    echo "Options:"
+    echo "  --shell          Start an interactive bash shell in the jail"
+    echo "  --codex          Use the Codex provider"
+    echo "  --just-every     Use the Codex fork provider (@justevery/code)"
+    echo "  --claude         Use the Claude Code provider"
+    echo "  -h, --help       Show this help and exit"
+    echo
+    echo "Providers:"
+    echo "  codex            OpenAI Codex CLI (@openai/codex)"
+    echo "  claude           Anthropic Claude Code CLI (@anthropic-ai/claude-code)"
+    echo "  coder            Just Every Code fork (@just-every/code)"
+    echo
+    echo "Agent args:"
+    echo "  Remaining arguments are passed to the selected provider's CLI."
+    echo "  Use -- to separate agent args from agent-jail options."
+    echo
+    echo "Defaults:"
+    echo "  Provider: codex"
+    echo "  Mount: current dir -> /workspace"
+    echo "  Persisted: docker volume 'agent-jail-home' as /home/node"
+    echo
+    echo "Examples:"
+    echo "  agent-jail --shell"
+    echo "  agent-jail --codex -- some-subcommand --flag value"
+    echo "  agent-jail --codex -- --help     # provider help"
+    echo "  agent-jail --justevery -- "'"fix tests in repo"'""
+    echo "  agent-jail --claude"
+    echo
+    echo "Env vars:"
+    echo "  OPENAI_API_KEY, ANTHROPIC_API_KEY (forwarded into the container)"
+    exit 0
+end
+
 # Parse arguments
 set USE_SHELL false
-set PROVIDER codex
+set PROVIDER ""
 set CMD_ARGS
 for arg in $argv
     if test "$arg" = "--shell"
@@ -17,7 +56,7 @@ for arg in $argv
         set PROVIDER codex
     else if test "$arg" = "--claude"
         set PROVIDER claude
-    else if test "$arg" = "--justcode"
+    else if test "$arg" = "--just-every"
         set PROVIDER coder
     else
         set CMD_ARGS $CMD_ARGS $arg
@@ -55,6 +94,7 @@ echo "services:
       - $MOUNT_DIR:/workspace:rw
       - agent-jail-home:/home/node:rw
       - $HOME/.codex:/home/node/.codex:rw
+      - $HOME/.claude:/home/node/.claude:rw
     working_dir: /workspace
     stdin_open: true
     tty: true
